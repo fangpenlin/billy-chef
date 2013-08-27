@@ -70,3 +70,21 @@ execute "install_billy" do
   action :run
 end
 
+# install testing dependencies
+execute "install_testing_dependencies" do
+  command "./env/bin/pip install -r test_requirements.txt"
+  cwd "/usr/local/billy"
+  user "billy"
+  group "billy"
+  action :run
+end
+
+# run unit and functional tests
+execute "run_unit_functional_tests" do
+  command "./env/bin/python setup.py nosetests"
+  cwd "/usr/local/billy"
+  user "billy"
+  group "billy"
+  action :run
+end
+

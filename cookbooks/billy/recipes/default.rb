@@ -9,6 +9,8 @@
 
 include_recipe "apt"
 include_recipe "python"
+include_recipe "postgresql::client"
+include_recipe "postgresql::server"
 
 # install git
 case node[:platform]
@@ -68,6 +70,11 @@ execute "install_billy" do
   user "billy"
   group "billy"
   action :run
+end
+
+# install PostgreSQL driver for python
+python_pip "psycopg2" do
+  virtualenv "/usr/local/billy/env"
 end
 
 # install testing dependencies

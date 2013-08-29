@@ -11,6 +11,26 @@ include_recipe "apt"
 include_recipe "python"
 include_recipe "postgresql::client"
 include_recipe "postgresql::server"
+include_recipe "database::postgresql"
+
+postgresql_connection_info = {:host => "127.0.0.1",
+                              :port => node['postgresql']['config']['port'],
+                              :username => 'postgres',
+                              :password => node['postgresql']['password']['postgres']}
+
+# create a testing account
+postgresql_database_user 'billy_test' do
+  connection postgresql_connection_info
+  password 'billyjean'
+  action :create
+end
+
+# create a testing account
+postgresql_database 'billy_test' do
+  connection postgresql_connection_info
+  owner 'billy_test'
+  action :create
+end
 
 # install git
 case node[:platform]
@@ -21,13 +41,14 @@ else
 end
 
 # create billy user
-user "billy" do
+user node[:billy][:user] do
+  supports :manage_home => true
   comment "user for running Billy system"
-  system true
-  shell "/bin/false"
+  home "/home/#{node.billy.user}"
+  shell "/bin/bash"
 end
 
-directory "/usr/local/billy" do
+directory node[:billy][:install_dir] do
   owner "billy"
   group "billy"
   recursive true
@@ -35,16 +56,16 @@ directory "/usr/local/billy" do
 end
 
 # clone the billy project for development
-git "/usr/local/billy" do
+git node[:billy][:install_dir] do
   repository "/vagrant"
-  reference "rewrite"
+  reference node[:billy][:branch]
   action :sync
   user "billy"
   group "billy"
 end
 
 # create a virtual environment for billy
-python_virtualenv "/usr/local/billy/env" do
+python_virtualenv "#{node.billy.install_dir}/env" do
   owner "billy"
   group "billy"
   options "--no-site-packages"
@@ -56,7 +77,7 @@ end
 # we created above, so we need to install it here manually
 execute "install_distribute" do
   command "./env/bin/python distribute_setup.py"
-  cwd "/usr/local/billy"
+  cwd "#{node.billy.install_dir}"
   user "billy"
   group "billy"
   action :run
@@ -65,7 +86,7 @@ end
 # install billy package
 execute "install_billy" do
   command "./env/bin/python setup.py develop"
-  cwd "/usr/local/billy"
+  cwd "#{node.billy.install_dir}"
   creates "billy.egg-info"
   user "billy"
   group "billy"
@@ -74,13 +95,13 @@ end
 
 # install PostgreSQL driver for python
 python_pip "psycopg2" do
-  virtualenv "/usr/local/billy/env"
+  virtualenv "#{node.billy.install_dir}/env"
 end
 
 # install testing dependencies
 execute "install_testing_dependencies" do
   command "./env/bin/pip install -r test_requirements.txt"
-  cwd "/usr/local/billy"
+  cwd "#{node.billy.install_dir}"
   user "billy"
   group "billy"
   action :run
@@ -89,7 +110,7 @@ end
 # run unit and functional tests
 execute "run_unit_functional_tests" do
   command "./env/bin/python setup.py nosetests"
-  cwd "/usr/local/billy"
+  cwd "#{node.billy.install_dir}"
   user "billy"
   group "billy"
   action :run

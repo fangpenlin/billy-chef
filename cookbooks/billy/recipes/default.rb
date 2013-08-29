@@ -19,16 +19,16 @@ postgresql_connection_info = {:host => "127.0.0.1",
                               :password => node['postgresql']['password']['postgres']}
 
 # create a testing account
-postgresql_database_user 'billy_test' do
+postgresql_database_user node[:billy][:testing][:db_user] do
   connection postgresql_connection_info
-  password 'billyjean'
+  password node[:billy][:testing][:db_password]
   action :create
 end
 
 # create a testing account
-postgresql_database 'billy_test' do
+postgresql_database node[:billy][:testing][:db] do
   connection postgresql_connection_info
-  owner 'billy_test'
+  owner node[:billy][:testing][:db_user]
   action :create
 end
 
@@ -111,6 +111,24 @@ end
 execute "run_unit_functional_tests" do
   command "./env/bin/python setup.py nosetests"
   cwd "#{node.billy.install_dir}"
+  user "billy"
+  group "billy"
+  action :run
+end
+
+# run unit and functional tests on postgresql
+testing_db_url = "postgresql://"\
+      "#{node.billy.testing.db_user}:"\
+      "#{node.billy.testing.db_password}"\
+      "@localhost/#{node.billy.testing.db}"
+
+execute "run_unit_functional_tests_with_postgresql" do
+  command "./env/bin/python setup.py nosetests"
+  cwd "#{node.billy.install_dir}"
+  environment ({
+    'BILLY_UNIT_TEST_DB' => testing_db_url, 
+    'BILLY_FUNC_TEST_DB' => testing_db_url
+  })
   user "billy"
   group "billy"
   action :run

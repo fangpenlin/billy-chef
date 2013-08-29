@@ -9,6 +9,7 @@
 
 include_recipe "apt"
 include_recipe "python"
+include_recipe "nginx::source"
 include_recipe "postgresql::client"
 include_recipe "postgresql::server"
 include_recipe "database::postgresql"
@@ -33,16 +34,16 @@ postgresql_database node[:billy][:testing][:db] do
 end
 
 # create a production account
-postgresql_database_user node[:billy][:testing][:db_user] do
+postgresql_database_user node[:billy][:prod][:db_user] do
   connection postgresql_connection_info
-  password node[:billy][:testing][:db_password]
+  password node[:billy][:prod][:db_password]
   action :create
 end
 
 # create a production account
-postgresql_database node[:billy][:testing][:db] do
+postgresql_database node[:billy][:prod][:db] do
   connection postgresql_connection_info
-  owner node[:billy][:testing][:db_user]
+  owner node[:billy][:prod][:db_user]
   action :create
 end
 
@@ -151,10 +152,10 @@ end
 python_pip "supervisor"
 # install uwsgi for our env
 python_pip "uwsgi" do
-  virtualenv "#{node.billy.install_dir}/env"
+  virtualenv "#{ node.billy.install_dir }/env"
 end
 # create logs folder
-directory "/home/#{node.billy.user}/logs" do
+directory "/home/#{ node.billy.user }/logs" do
   owner "billy"
   group "billy"
   recursive true
@@ -162,15 +163,29 @@ directory "/home/#{node.billy.user}/logs" do
 end
 # create files from template
 [ 
-  [ "/home/#{node.billy.user}/supervisord.conf", 'supervisord.conf.erb' ],
-  [ "#{node.billy.install_dir}/billy_web.sd.conf", 'billy_web.sd.conf.erb' ],
-  [ "#{node.billy.install_dir}/billy_web.uwsgi.yaml", 'billy_web.uwsgi.yaml.erb' ],
-  [ "#{node.billy.install_dir}/billy_prod.ini", 'billy_prod.ini.erb' ],
-  [ "#{node.billy.install_dir}/billy_wsgi.py", 'billy_wsgi.py.erb' ],
+  [ "/home/#{ node.billy.user }/supervisord.conf", 'supervisord.conf.erb' ],
+  [ "#{ node.billy.install_dir }/web.sd.conf", 'web.sd.conf.erb' ],
+  [ "#{ node.billy.install_dir }/prod.ini", 'prod.ini.erb' ],
+  [ "#{ node.billy.install_dir }/wsgi.py", 'wsgi.py.erb' ],
+  [ "#{ node.billy.install_dir }/web.nx.conf", 'web.nx.conf.erb' ],
 ].each do |dest_file, tmpl_source|
   template dest_file do
     source tmpl_source
     owner "billy"
     group "billy"
   end
+end
+# link nginx configure
+link "#{ node.nginx.dir }/sites-enabled/billy_web.conf" do
+  to "#{ node.billy.install_dir }/web.nx.conf"
+  owner 'root'
+  notifies :reload, 'service[nginx]'
+end
+# initialize the database
+execute "initialize_database" do
+  command "./env/bin/initialize_billy_db prod.ini"
+  cwd node[:billy][:install_dir]
+  user "billy"
+  group "billy"
+  action :run
 end

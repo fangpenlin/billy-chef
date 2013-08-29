@@ -10,6 +10,6 @@ sys.path.insert(0, os.path.abspath(os.curdir))
 from pyramid.paster import get_app
 from pyramid.paster import setup_logging
 
-config_uri = 'billy_prod.ini'
+config_uri = 'prod.ini'
 setup_logging(config_uri)
 application = get_app(config_uri, 'main')

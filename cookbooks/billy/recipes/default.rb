@@ -32,6 +32,20 @@ postgresql_database node[:billy][:testing][:db] do
   action :create
 end
 
+# create a production account
+postgresql_database_user node[:billy][:testing][:db_user] do
+  connection postgresql_connection_info
+  password node[:billy][:testing][:db_password]
+  action :create
+end
+
+# create a production account
+postgresql_database node[:billy][:testing][:db] do
+  connection postgresql_connection_info
+  owner node[:billy][:testing][:db_user]
+  action :create
+end
+
 # install git
 case node[:platform]
 when "debian", "ubuntu"
@@ -56,6 +70,7 @@ directory node[:billy][:install_dir] do
 end
 
 # clone the billy project for development
+# TODO: clone from github if we are not in vagrant environment?
 git node[:billy][:install_dir] do
   repository "/vagrant"
   reference node[:billy][:branch]
@@ -117,20 +132,45 @@ execute "run_unit_functional_tests" do
 end
 
 # run unit and functional tests on postgresql
-testing_db_url = "postgresql://"\
-      "#{node.billy.testing.db_user}:"\
-      "#{node.billy.testing.db_password}"\
-      "@localhost/#{node.billy.testing.db}"
-
 execute "run_unit_functional_tests_with_postgresql" do
   command "./env/bin/python setup.py nosetests"
-  cwd "#{node.billy.install_dir}"
+  cwd node[:billy][:install_dir]
   environment ({
-    'BILLY_UNIT_TEST_DB' => testing_db_url, 
-    'BILLY_FUNC_TEST_DB' => testing_db_url
+    'BILLY_UNIT_TEST_DB' => node[:billy][:testing][:db_url], 
+    'BILLY_FUNC_TEST_DB' => node[:billy][:testing][:db_url]
   })
   user "billy"
   group "billy"
   action :run
 end
 
+# prepare the environment for running billy
+###########################################
+
+# install supervisord
+python_pip "supervisor"
+# install uwsgi for our env
+python_pip "uwsgi" do
+  virtualenv "#{node.billy.install_dir}/env"
+end
+# create logs folder
+directory "/home/#{node.billy.user}/logs" do
+  owner "billy"
+  group "billy"
+  recursive true
+  action :create
+end
+# create files from template
+[ 
+  [ "/home/#{node.billy.user}/supervisord.conf", 'supervisord.conf.erb' ],
+  [ "#{node.billy.install_dir}/billy_web.sd.conf", 'billy_web.sd.conf.erb' ],
+  [ "#{node.billy.install_dir}/billy_web.uwsgi.yaml", 'billy_web.uwsgi.yaml.erb' ],
+  [ "#{node.billy.install_dir}/billy_prod.ini", 'billy_prod.ini.erb' ],
+  [ "#{node.billy.install_dir}/billy_wsgi.py", 'billy_wsgi.py.erb' ],
+].each do |dest_file, tmpl_source|
+  template dest_file do
+    source tmpl_source
+    owner "billy"
+    group "billy"
+  end
+end

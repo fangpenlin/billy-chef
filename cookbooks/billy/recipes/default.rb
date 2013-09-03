@@ -73,8 +73,8 @@ end
 # clone the billy project for development
 # TODO: clone from github if we are not in vagrant environment?
 git node[:billy][:install_dir] do
-  repository "/vagrant"
-  reference node[:billy][:branch]
+  repository node[:billy][:git_repo]
+  reference node[:billy][:git_branch]
   action :sync
   user "billy"
   group "billy"
@@ -189,3 +189,26 @@ execute "initialize_database" do
   group "billy"
   action :run
 end
+# setup crontab for running process transactions
+cron "process_transactions" do
+  command "cd #{ node.billy.install_dir } && "\
+    "./env/bin/process_billy_tx prod.ini >> "\
+    "/home/#{ node.billy.user }/logs/cron_process_transactions.log 2>&1 "
+  minute "*/3"
+  hour "*"
+  day "*"
+  month "*"
+  weekday "*"
+  user "billy"
+  action :create
+end
+# execute supervisord
+# run unit and functional tests
+execute "run_supervisord" do
+  command "supervisord -c /home/#{ node.billy.user }/supervisord.conf"
+  user "billy"
+  group "billy"
+  not_if { ::File.exists?("/home/#{ node[:billy][:user] }/logs/supervisord.pid") }
+  action :run
+end
+# TODO: start supervisord when reboot

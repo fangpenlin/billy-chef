@@ -2,7 +2,7 @@ default['build_essential']['compiletime'] = true
 
 default['billy']['install_dir'] = "/home/billy/billy_server"
 default['billy']['user'] = "billy"
-default['billy']['git_branch'] = "rewrite"
+default['billy']['git_branch'] = "master"
 default['billy']['git_repo'] = "/vagrant"
 
 default['billy']['testing']['db'] = "billy_test"

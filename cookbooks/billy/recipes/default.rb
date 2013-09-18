@@ -14,6 +14,15 @@ include_recipe "postgresql::client"
 include_recipe "postgresql::server"
 include_recipe "database::postgresql"
 
+# set the file descriptor number limitations
+template "/etc/security/limits.conf" do
+  source "limits.conf.erb"
+  owner "root"
+  group "root"
+end
+
+# TODO: what about some security setup? fail2ban?
+
 postgresql_connection_info = {:host => "127.0.0.1",
                               :port => node['postgresql']['config']['port'],
                               :username => 'postgres',
@@ -202,13 +211,16 @@ cron "process_transactions" do
   user "billy"
   action :create
 end
-# execute supervisord
-# run unit and functional tests
-execute "run_supervisord" do
-  command "supervisord -c /home/#{ node.billy.user }/supervisord.conf"
-  user "billy"
-  group "billy"
-  not_if { ::File.exists?("/home/#{ node[:billy][:user] }/logs/supervisord.pid") }
-  action :run
+# setup supervisord service
+template "/etc/init.d/supervisord" do
+  source "supervisord.erb"
+  owner "root"
+  group "root"
+  mode "0755"
+  notifies :enable, "service[supervisord]"
+  notifies :start, "service[supervisord]"
 end
-# TODO: start supervisord when reboot
+service "supervisord" do
+  supports :status => true, :restart => true, :reload => true
+  action [:enable, :restart]
+end

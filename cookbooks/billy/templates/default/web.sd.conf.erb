@@ -9,7 +9,7 @@ command=<%= node[:billy][:install_dir] %>/env/bin/uwsgi
     --chmod-socket=666
     --master
     --no-orphans
-    --processes=8
+    --processes=<%= node["cpu"]["total"] %>
     --max-requests=10249
     --module=wsgi
 ;

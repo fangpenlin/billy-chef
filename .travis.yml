@@ -1,0 +1,15 @@
+language: ruby
+gemfile:
+   - test/support/Gemfile
+before_install:
+  - psql --version
+  - sudo /etc/init.d/postgresql stop
+  - sudo apt-get remove postgresql postgresql-9.1 -qq --purge
+# command to install dependencies
+install:
+  - rvm use system
+  - ruby -v
+  - curl -L https://www.opscode.com/chef/install.sh | sudo bash
+  - chef-solo -v
+script:
+  - cd test && sudo chef-solo -c solo.rb

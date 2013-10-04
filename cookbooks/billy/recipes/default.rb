@@ -157,6 +157,18 @@ end
 # prepare the environment for running billy
 ###########################################
 
+# generate a self signed key and crt, should be replaced manually later
+# if this is going to be a production environment
+bash "openvpn-server-key" do
+  environment("KEY_CN" => "server")
+  code <<-EOF
+    openssl req -x509 -batch -days 3650 \
+      -nodes -new -newkey rsa:2048 -keyout #{ node[:billy][:ssl][:key_path] } \
+      -out #{ node[:billy][:ssl][:crt_path] }
+  EOF
+  not_if { ::File.exists?(node[:billy][:ssl][:crt_path]) }
+end
+
 # install supervisord
 python_pip "supervisor"
 # install uwsgi for our env

@@ -20,3 +20,6 @@ default['billy']['prod']['db_url'] = "postgresql://"\
   "#{default.billy.prod.db_user}:"\
   "#{default.billy.prod.db_password}"\
   "@localhost/#{default.billy.prod.db}"
+
+default['billy']['ssl']['crt_path'] = "/root/billy_server.crt"
+default['billy']['ssl']['key_path'] = "/root/billy_server.key"

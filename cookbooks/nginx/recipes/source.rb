@@ -120,6 +120,8 @@ when 'runit'
 
   service 'nginx' do
     supports       :status => true, :restart => true, :reload => true
+    retries        3  # somehow, the restart will timeout (sometimes), we add 
+                      # this here to make it works
     reload_command "#{node['runit']['sv_bin']} hup #{node['runit']['service_dir']}/nginx"
   end
 when 'bluepill'

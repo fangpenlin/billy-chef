@@ -4,7 +4,8 @@ gemfile:
 before_install:
   - psql --version
   - sudo /etc/init.d/postgresql stop
-  - sudo apt-get remove postgresql postgresql-9.1 -qq --purge
+  - sudo apt-get remove postgresql postgresql-client postgresql-common -qq --purge
+  - sudo rm -rf /etc/postgresql /var/lib/postgresql
 # command to install dependencies
 install:
   - rvm use system

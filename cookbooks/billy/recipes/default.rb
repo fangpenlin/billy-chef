@@ -187,6 +187,7 @@ end
   [ "/home/#{ node.billy.user }/supervisord.conf", 'supervisord.conf.erb' ],
   [ "#{ node.billy.install_dir }/web.sd.conf", 'web.sd.conf.erb' ],
   [ "#{ node.billy.install_dir }/prod.ini", 'prod.ini.erb' ],
+  [ "#{ node.billy.install_dir }/prod_alembic.ini", 'prod_alembic.ini.erb' ],
   [ "#{ node.billy.install_dir }/wsgi.py", 'wsgi.py.erb' ],
   [ "#{ node.billy.install_dir }/web.nx.conf", 'web.nx.conf.erb' ],
 ].each do |dest_file, tmpl_source|

@@ -1,4 +1,5 @@
 default['build_essential']['compiletime'] = true
+default['nginx']['init_style'] = 'init'
 
 default['billy']['install_dir'] = "/home/billy/billy_server"
 default['billy']['user'] = "billy"
